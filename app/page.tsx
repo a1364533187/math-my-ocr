@@ -35,11 +35,11 @@ export default function Home() {
     let worker: Worker | null = null
     try {
       worker = await createWorker()
-      // @ts-ignore - Tesseract.js 类型定义问题
+      // @ts-expect-error - Tesseract.js 类型定义问题
       await worker.loadLanguage('eng')
-      // @ts-ignore
+      // @ts-expect-error - Tesseract.js 类型定义问题
       await worker.initialize('eng')
-      // @ts-ignore
+      // @ts-expect-error - Tesseract.js 类型定义问题
       const { data: { text } } = await worker.recognize(selectedFile)
 
       // 清理识别出的文本，只保留数学表达式
@@ -56,7 +56,7 @@ export default function Home() {
       setResult('图片识别失败，请重试')
     } finally {
       if (worker) {
-        // @ts-ignore
+        // @ts-expect-error - Tesseract.js 类型定义问题
         await worker.terminate()
       }
       setLoading(false)
@@ -118,6 +118,7 @@ export default function Home() {
               <div>
                 <p className="font-medium mb-2">预览图片：</p>
                 <div className="relative w-full h-[300px] border rounded-lg overflow-hidden">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
                     src={image}
                     alt="Preview"
