@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { createWorker } from 'tesseract.js'
+import { createWorker, Worker } from 'tesseract.js'
 import { evaluate } from 'mathjs'
 
 export default function Home() {
@@ -32,12 +32,15 @@ export default function Home() {
 
     // OCR识别
     setLoading(true)
+    let worker: Worker | null = null
     try {
-      const worker = await createWorker()
+      worker = await createWorker()
+      // @ts-ignore - Tesseract.js 类型定义问题
       await worker.loadLanguage('eng')
+      // @ts-ignore
       await worker.initialize('eng')
+      // @ts-ignore
       const { data: { text } } = await worker.recognize(selectedFile)
-      await worker.terminate()
 
       // 清理识别出的文本，只保留数学表达式
       const cleanedText = text.replace(/[^0-9+\-*/().]/g, '')
@@ -52,6 +55,10 @@ export default function Home() {
     } catch {
       setResult('图片识别失败，请重试')
     } finally {
+      if (worker) {
+        // @ts-ignore
+        await worker.terminate()
+      }
       setLoading(false)
     }
   }
