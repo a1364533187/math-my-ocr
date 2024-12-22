@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import { createWorker } from 'tesseract.js'
 import { evaluate } from 'mathjs'
+import Image from 'next/image'
 
 export default function Home() {
   const [image, setImage] = useState<string | null>(null)
@@ -46,13 +47,14 @@ export default function Home() {
       try {
         const calculatedResult = evaluate(cleanedText)
         setResult(`表达式: ${cleanedText}\n计算结果: ${calculatedResult}`)
-      } catch (error) {
+      } catch {
         setResult('无法计算该表达式，请确保图片中包含有效的数学表达式')
       }
-    } catch (error) {
+    } catch {
       setResult('图片识别失败，请重试')
+    } finally {
+      setLoading(false)
     }
-    setLoading(false)
   }
 
   const examples = [
@@ -109,7 +111,14 @@ export default function Home() {
             {image && (
               <div>
                 <p className="font-medium mb-2">预览图片：</p>
-                <img src={image} alt="Preview" className="max-w-full h-auto rounded-lg border" />
+                <div className="relative w-full h-[300px]">
+                  <Image
+                    src={image}
+                    alt="Preview"
+                    fill
+                    className="object-contain rounded-lg border"
+                  />
+                </div>
               </div>
             )}
 
