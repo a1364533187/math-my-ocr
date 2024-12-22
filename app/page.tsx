@@ -3,7 +3,6 @@
 import { useState } from 'react'
 import { createWorker } from 'tesseract.js'
 import { evaluate } from 'mathjs'
-import Image from 'next/image'
 
 export default function Home() {
   const [image, setImage] = useState<string | null>(null)
@@ -111,12 +110,11 @@ export default function Home() {
             {image && (
               <div>
                 <p className="font-medium mb-2">预览图片：</p>
-                <div className="relative w-full h-[300px]">
-                  <Image
+                <div className="relative w-full h-[300px] border rounded-lg overflow-hidden">
+                  <img
                     src={image}
                     alt="Preview"
-                    fill
-                    className="object-contain rounded-lg border"
+                    className="w-full h-full object-contain"
                   />
                 </div>
               </div>
