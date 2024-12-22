@@ -1,101 +1,158 @@
-import Image from "next/image";
+'use client'
+
+import { useState } from 'react'
+import { createWorker } from 'tesseract.js'
+import { evaluate } from 'mathjs'
 
 export default function Home() {
-  return (
-    <div className="grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20 font-[family-name:var(--font-geist-sans)]">
-      <main className="flex flex-col gap-8 row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="list-inside list-decimal text-sm text-center sm:text-left font-[family-name:var(--font-geist-mono)]">
-          <li className="mb-2">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] px-1 py-0.5 rounded font-semibold">
-              app/page.tsx
-            </code>
-            .
-          </li>
-          <li>Save and see your changes instantly.</li>
-        </ol>
+  const [image, setImage] = useState<string | null>(null)
+  const [result, setResult] = useState<string>('')
+  const [loading, setLoading] = useState(false)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:min-w-44"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+
+    // 显示预览图片
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      setImage(e.target?.result as string)
+    }
+    reader.readAsDataURL(file)
+    setSelectedFile(file)
+    setResult('') // 清除之前的结果
+  }
+
+  const handleProcess = async () => {
+    if (!selectedFile) {
+      alert('请先上传图片')
+      return
+    }
+
+    // OCR识别
+    setLoading(true)
+    try {
+      const worker = await createWorker()
+      await worker.loadLanguage('eng')
+      await worker.initialize('eng')
+      const { data: { text } } = await worker.recognize(selectedFile)
+      await worker.terminate()
+
+      // 清理识别出的文本，只保留数学表达式
+      const cleanedText = text.replace(/[^0-9+\-*/().]/g, '')
+      
+      // 计算结果
+      try {
+        const calculatedResult = evaluate(cleanedText)
+        setResult(`表达式: ${cleanedText}\n计算结果: ${calculatedResult}`)
+      } catch (error) {
+        setResult('无法计算该表达式，请确保图片中包含有效的数学表达式')
+      }
+    } catch (error) {
+      setResult('图片识别失败，请重试')
+    }
+    setLoading(false)
+  }
+
+  const examples = [
+    {
+      description: '简单加法',
+      expression: '1 + 2',
+      result: '3',
+      tips: '清晰的数字和运算符，黑色文字白色背景'
+    },
+    {
+      description: '混合运算',
+      expression: '(2 + 3) * 4',
+      result: '20',
+      tips: '包含括号的复杂表达式'
+    },
+    {
+      description: '除法运算',
+      expression: '10 / 2',
+      result: '5',
+      tips: '除号要清晰可见'
+    }
+  ]
+
+  return (
+    <main className="min-h-screen p-8">
+      <div className="max-w-4xl mx-auto">
+        <h1 className="text-3xl font-bold mb-8">数学表达式识别计算器</h1>
+        
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          <div className="space-y-6">
+            <div className="space-y-4">
+              <label className="block text-sm font-medium mb-2">
+                上传包含数学表达式的图片：
+              </label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={handleImageUpload}
+                className="block w-full text-sm border rounded-lg cursor-pointer p-2"
+              />
+              <button
+                onClick={handleProcess}
+                disabled={loading || !selectedFile}
+                className={`w-full py-2 px-4 rounded-lg text-white font-medium
+                  ${loading || !selectedFile 
+                    ? 'bg-gray-400 cursor-not-allowed' 
+                    : 'bg-blue-500 hover:bg-blue-600'
+                  }`}
+              >
+                {loading ? '处理中...' : '识别并计算'}
+              </button>
+            </div>
+
+            {image && (
+              <div>
+                <p className="font-medium mb-2">预览图片：</p>
+                <img src={image} alt="Preview" className="max-w-full h-auto rounded-lg border" />
+              </div>
+            )}
+
+            {result && (
+              <div className="p-4 bg-gray-100 rounded-lg">
+                <pre className="whitespace-pre-wrap">{result}</pre>
+              </div>
+            )}
+          </div>
+
+          <div className="space-y-6">
+            <h2 className="text-xl font-semibold">使用示例</h2>
+            <div className="space-y-4">
+              {examples.map((example, index) => (
+                <div key={index} className="p-4 border rounded-lg">
+                  <h3 className="font-medium text-lg">{example.description}</h3>
+                  <div className="mt-2 space-y-2">
+                    <p className="font-mono bg-gray-100 p-2 rounded">
+                      表达式: {example.expression}
+                    </p>
+                    <p className="text-green-600">
+                      结果: {example.result}
+                    </p>
+                    <p className="text-sm text-gray-600">
+                      提示: {example.tips}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="bg-yellow-50 p-4 rounded-lg">
+              <h3 className="font-medium mb-2">使用提示</h3>
+              <ul className="list-disc list-inside space-y-2 text-sm">
+                <li>确保图片清晰，文字与背景对比度高</li>
+                <li>支持的运算符：+（加）、-（减）、*（乘）、/（除）、()（括号）</li>
+                <li>数字和运算符之间最好有适当间距</li>
+                <li>避免使用手写体，建议使用打印字体</li>
+              </ul>
+            </div>
+          </div>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-6 flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
-          />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
-    </div>
-  );
+      </div>
+    </main>
+  )
 }
