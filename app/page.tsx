@@ -97,6 +97,21 @@ export default function Home() {
                 onChange={handleImageUpload}
                 className="block w-full text-sm border rounded-lg cursor-pointer p-2"
               />
+
+              {image && (
+                <div>
+                  <p className="font-medium mb-2">预览图片：</p>
+                  <div className="relative w-full h-[300px] border rounded-lg overflow-hidden">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={image}
+                      alt="Preview"
+                      className="w-full h-full object-contain"
+                    />
+                  </div>
+                </div>
+              )}
+
               <button
                 onClick={handleProcess}
                 disabled={loading || !selectedFile}
@@ -109,20 +124,6 @@ export default function Home() {
                 {loading ? '处理中...' : '识别并计算'}
               </button>
             </div>
-
-            {image && (
-              <div>
-                <p className="font-medium mb-2">预览图片：</p>
-                <div className="relative w-full h-[300px] border rounded-lg overflow-hidden">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={image}
-                    alt="Preview"
-                    className="w-full h-full object-contain"
-                  />
-                </div>
-              </div>
-            )}
 
             {result && (
               <div className="p-4 bg-gray-100 rounded-lg">
